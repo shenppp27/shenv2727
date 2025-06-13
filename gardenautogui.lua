@@ -116,9 +116,12 @@ end)
 spawn(function()
     while true do
         if autoBuy then
-            -- Try to buy the selected gear
+            game:GetService("StarterGui"):SetCore("SendNotification",{
+                Title = "AutoBuy",
+                Text = "Trying to buy: "..selectedGear
+            })
             game:GetService("ReplicatedStorage"):WaitForChild("GameEvents"):WaitForChild("BuyGearStock"):FireServer(selectedGear)
         end
-        wait(3) -- Check every 3 seconds
+        wait(3)
     end
 end)
