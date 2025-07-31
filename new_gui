@@ -1,5 +1,5 @@
 -- 🌱 Grow a Garden Script Hub
--- Version: 1.0 (Clean Farming GUI)
+-- Version: 1.2 (Added All Seeds)
 -- Compatible with Delta Executor
 -- Created by ShenEnv
 -- GitHub: https://github.com/shenppp27/shenv2727
@@ -32,11 +32,25 @@ local success, err = pcall(function()
     local player = Players.LocalPlayer
     local mouse = player:GetMouse()
 
+    -- All available seeds
+    local allSeeds = {
+        "Carrot", "Strawberry", "Blueberry", "Tomato", "Corn", 
+        "Daffodil", "Watermelon", "Pumpkin", "Apple", "Bamboo", 
+        "Coconut", "Cactus", "Mango", "Pepper", "Grape", 
+        "Mushroom", "Cacao", "Beanstalk"
+    }
+
     -- Farming Variables
     local autoCollectFruits = false
-    local autoBuyCarrot = false
+    local autoBuyAllSeeds = false
     local autoCollectConnection = nil
     local autoBuyConnection = nil
+
+    -- Movement Variables
+    local speedEnabled = false
+    local jumpEnabled = false
+    local originalWalkSpeed = 16
+    local originalJumpPower = 50
 
     -- Game Events
     local playerScripts = player:WaitForChild("PlayerScripts")
@@ -58,14 +72,47 @@ local success, err = pcall(function()
         end
     end
 
-    -- Function to buy carrot
-    local function buyCarrot()
+    -- Function to buy specific seed
+    local function buySeed(seedName)
         local success, err = pcall(function()
-            local args = {"Carrot"}
+            local args = {seedName}
             buySeedStock:FireServer(unpack(args))
             rememberUnlockage:FireServer()
         end)
         return success
+    end
+
+    -- Function to buy all seeds
+    local function buyAllSeeds()
+        local purchased = 0
+        local failed = 0
+        
+        for _, seedName in pairs(allSeeds) do
+            local success = buySeed(seedName)
+            if success then
+                purchased = purchased + 1
+                print("🌱 Bought: " .. seedName)
+            else
+                failed = failed + 1
+                warn("❌ Failed to buy: " .. seedName)
+            end
+            wait(0.1) -- Small delay between purchases
+        end
+        
+        return purchased, failed
+    end
+
+    -- Movement Functions
+    local function setWalkSpeed(speed)
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.WalkSpeed = speed
+        end
+    end
+
+    local function setJumpPower(power)
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.JumpPower = power
+        end
     end
 
     -- Find fruits in workspace
@@ -79,7 +126,10 @@ local success, err = pcall(function()
                 for _, item in pairs(folder:GetChildren()) do
                     if item:IsA("Model") or item:IsA("Part") then
                         local itemName = item.Name:lower()
-                        if itemName:find("fruit") or itemName:find("carrot") or itemName:find("coin") or itemName:find("gem") then
+                        if itemName:find("fruit") or itemName:find("carrot") or itemName:find("strawberry") or 
+                           itemName:find("blueberry") or itemName:find("tomato") or itemName:find("corn") or
+                           itemName:find("watermelon") or itemName:find("pumpkin") or itemName:find("apple") or
+                           itemName:find("mango") or itemName:find("grape") or itemName:find("coin") or itemName:find("gem") then
                             table.insert(fruits, item)
                         end
                     end
@@ -90,7 +140,10 @@ local success, err = pcall(function()
         for _, item in pairs(Workspace:GetChildren()) do
             if item:IsA("Model") or item:IsA("Part") then
                 local itemName = item.Name:lower()
-                if itemName:find("fruit") or itemName:find("carrot") or itemName:find("coin") or itemName:find("gem") then
+                if itemName:find("fruit") or itemName:find("carrot") or itemName:find("strawberry") or 
+                   itemName:find("blueberry") or itemName:find("tomato") or itemName:find("corn") or
+                   itemName:find("watermelon") or itemName:find("pumpkin") or itemName:find("apple") or
+                   itemName:find("mango") or itemName:find("grape") or itemName:find("coin") or itemName:find("gem") then
                     table.insert(fruits, item)
                 end
             end
@@ -142,17 +195,15 @@ local success, err = pcall(function()
         end
     end
 
-    -- Auto buy carrot loop
-    local function autoBuyCarrotLoop()
-        if not autoBuyCarrot then return end
+    -- Auto buy all seeds loop
+    local function autoBuyAllSeedsLoop()
+        if not autoBuyAllSeeds then return end
         
-        local success = buyCarrot()
-        if success then
-            print("🥕 Bought carrot!")
-            wait(3) -- Wait 3 seconds between purchases
-        else
-            wait(1)
+        local purchased, failed = buyAllSeeds()
+        if purchased > 0 then
+            print("🌱 Auto-bought " .. purchased .. " seed types!")
         end
+        wait(10) -- Wait 10 seconds between bulk purchases
     end
 
     -- Clean up existing GUI
@@ -168,14 +219,14 @@ local success, err = pcall(function()
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.ResetOnSpawn = false
 
-    -- Main Frame
+    -- Main Frame (made larger for more features)
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
     mainFrame.Parent = screenGui
     mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
     mainFrame.BorderSizePixel = 0
-    mainFrame.Position = UDim2.new(0.5, -175, 0.5, -150)
-    mainFrame.Size = UDim2.new(0, 350, 0, 300)
+    mainFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
+    mainFrame.Size = UDim2.new(0, 350, 0, 400)
     mainFrame.Active = true
     mainFrame.Draggable = true
 
@@ -201,9 +252,9 @@ local success, err = pcall(function()
     titleLabel.Parent = topBar
     titleLabel.BackgroundTransparency = 1
     titleLabel.Position = UDim2.new(0, 10, 0, 0)
-    titleLabel.Size = UDim2.new(0, 200, 1, 0)
+    titleLabel.Size = UDim2.new(0, 250, 1, 0)
     titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.Text = "🌱 Grow a Garden Hub"
+    titleLabel.Text = "🌱 Grow a Garden Hub v1.2"
     titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     titleLabel.TextSize = 14
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -225,17 +276,20 @@ local success, err = pcall(function()
     closeCorner.CornerRadius = UDim.new(0, 5)
     closeCorner.Parent = closeButton
 
-    -- Content Frame
-    local contentFrame = Instance.new("Frame")
+    -- Content Frame with scroll
+    local contentFrame = Instance.new("ScrollingFrame")
     contentFrame.Name = "Content"
     contentFrame.Parent = mainFrame
     contentFrame.BackgroundTransparency = 1
     contentFrame.Position = UDim2.new(0, 15, 0, 45)
     contentFrame.Size = UDim2.new(1, -30, 1, -60)
+    contentFrame.CanvasSize = UDim2.new(0, 0, 0, 550) -- Scroll for more content
+    contentFrame.ScrollBarThickness = 6
+    contentFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
 
     local contentLayout = Instance.new("UIListLayout")
     contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    contentLayout.Padding = UDim.new(0, 10)
+    contentLayout.Padding = UDim.new(0, 8)
     contentLayout.Parent = contentFrame
 
     -- Create Button Function
@@ -244,11 +298,11 @@ local success, err = pcall(function()
         button.Parent = contentFrame
         button.BackgroundColor3 = color
         button.BorderSizePixel = 0
-        button.Size = UDim2.new(1, 0, 0, 35)
+        button.Size = UDim2.new(1, 0, 0, 32)
         button.Font = Enum.Font.Gotham
         button.Text = text
         button.TextColor3 = Color3.fromRGB(255, 255, 255)
-        button.TextSize = 12
+        button.TextSize = 11
         
         local buttonCorner = Instance.new("UICorner")
         buttonCorner.CornerRadius = UDim.new(0, 6)
@@ -260,7 +314,7 @@ local success, err = pcall(function()
         
         -- Hover Effect
         button.MouseEnter:Connect(function()
-            TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.new(color.R + 0.1, color.G + 0.1, color.B + 0.1)}):Play()
+            TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.new(math.min(color.R + 0.1, 1), math.min(color.G + 0.1, 1), math.min(color.B + 0.1, 1))}):Play()
         end)
         
         button.MouseLeave:Connect(function()
@@ -276,7 +330,7 @@ local success, err = pcall(function()
         toggleFrame.Parent = contentFrame
         toggleFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
         toggleFrame.BorderSizePixel = 0
-        toggleFrame.Size = UDim2.new(1, 0, 0, 35)
+        toggleFrame.Size = UDim2.new(1, 0, 0, 32)
         
         local toggleCorner = Instance.new("UICorner")
         toggleCorner.CornerRadius = UDim.new(0, 6)
@@ -290,15 +344,15 @@ local success, err = pcall(function()
         toggleLabel.Font = Enum.Font.Gotham
         toggleLabel.Text = text
         toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        toggleLabel.TextSize = 12
+        toggleLabel.TextSize = 11
         toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
         
         local toggleButton = Instance.new("TextButton")
         toggleButton.Parent = toggleFrame
         toggleButton.BackgroundColor3 = Color3.fromRGB(255, 96, 96)
         toggleButton.BorderSizePixel = 0
-        toggleButton.Position = UDim2.new(1, -35, 0, 7.5)
-        toggleButton.Size = UDim2.new(0, 25, 0, 20)
+        toggleButton.Position = UDim2.new(1, -30, 0, 6)
+        toggleButton.Size = UDim2.new(0, 20, 0, 20)
         toggleButton.Text = ""
         
         local toggleButtonCorner = Instance.new("UICorner")
@@ -329,7 +383,7 @@ local success, err = pcall(function()
         notif.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
         notif.BorderSizePixel = 0
         notif.Position = UDim2.new(1, 10, 0, 50)
-        notif.Size = UDim2.new(0, 200, 0, 40)
+        notif.Size = UDim2.new(0, 200, 0, 50)
         
         local notifCorner = Instance.new("UICorner")
         notifCorner.CornerRadius = UDim.new(0, 6)
@@ -349,7 +403,7 @@ local success, err = pcall(function()
         TweenService:Create(notif, TweenInfo.new(0.3), {Position = UDim2.new(1, -210, 0, 50)}):Play()
         
         spawn(function()
-            wait(2)
+            wait(3)
             TweenService:Create(notif, TweenInfo.new(0.3), {Position = UDim2.new(1, 10, 0, 50)}):Play()
             wait(0.3)
             notif:Destroy()
@@ -357,6 +411,8 @@ local success, err = pcall(function()
     end
 
     -- GUI Content
+    
+    -- Farming Features
     createToggle("🍎 Auto Collect Fruits", function(state)
         autoCollectFruits = state
         
@@ -383,20 +439,29 @@ local success, err = pcall(function()
         createNotification("🍎 Collecting fruits...")
     end)
 
-    createToggle("🥕 Auto Buy Carrot", function(state)
-        autoBuyCarrot = state
+    -- Seed Purchase Features
+    createButton("🌱 BUY ALL SEEDS", Color3.fromRGB(34, 139, 34), function()
+        createNotification("🌱 Buying all seeds...")
+        spawn(function()
+            local purchased, failed = buyAllSeeds()
+            createNotification("🌱 Bought " .. purchased .. " seeds!\n❌ Failed: " .. failed)
+        end)
+    end)
+
+    createToggle("🌱 Auto Buy All Seeds", function(state)
+        autoBuyAllSeeds = state
         
         if state then
-            createNotification("🥕 Auto Buy: ON")
+            createNotification("🌱 Auto Buy All: ON")
             if autoBuyConnection then
                 autoBuyConnection:Disconnect()
             end
             autoBuyConnection = RunService.Heartbeat:Connect(function()
-                spawn(autoBuyCarrotLoop)
-                wait(3)
+                spawn(autoBuyAllSeedsLoop)
+                wait(10)
             end)
         else
-            createNotification("🥕 Auto Buy: OFF")
+            createNotification("🌱 Auto Buy All: OFF")
             if autoBuyConnection then
                 autoBuyConnection:Disconnect()
                 autoBuyConnection = nil
@@ -404,12 +469,54 @@ local success, err = pcall(function()
         end
     end)
 
-    createButton("🥕 Buy Carrot Now", Color3.fromRGB(255, 165, 0), function()
-        local success = buyCarrot()
-        if success then
-            createNotification("🥕 Carrot purchased!")
+    -- Individual seed buttons (compact)
+    createButton("🥕 Carrot", Color3.fromRGB(255, 140, 0), function()
+        local success = buySeed("Carrot")
+        createNotification(success and "🥕 Carrot bought!" or "🥕 Failed!")
+    end)
+
+    createButton("🍓 Strawberry", Color3.fromRGB(220, 20, 60), function()
+        local success = buySeed("Strawberry")
+        createNotification(success and "🍓 Strawberry bought!" or "🍓 Failed!")
+    end)
+
+    createButton("🫐 Blueberry", Color3.fromRGB(75, 0, 130), function()
+        local success = buySeed("Blueberry")
+        createNotification(success and "🫐 Blueberry bought!" or "🫐 Failed!")
+    end)
+
+    createButton("🍅 Tomato", Color3.fromRGB(255, 99, 71), function()
+        local success = buySeed("Tomato")
+        createNotification(success and "🍅 Tomato bought!" or "🍅 Failed!")
+    end)
+
+    createButton("🌽 Corn", Color3.fromRGB(255, 215, 0), function()
+        local success = buySeed("Corn")
+        createNotification(success and "🌽 Corn bought!" or "🌽 Failed!")
+    end)
+
+    -- Movement Features
+    createToggle("⚡ Fast Walk Speed", function(state)
+        speedEnabled = state
+        
+        if state then
+            setWalkSpeed(100)
+            createNotification("⚡ Fast Speed: ON")
         else
-            createNotification("🥕 Purchase failed!")
+            setWalkSpeed(originalWalkSpeed)
+            createNotification("⚡ Fast Speed: OFF")
+        end
+    end)
+
+    createToggle("🦘 High Jump", function(state)
+        jumpEnabled = state
+        
+        if state then
+            setJumpPower(150)
+            createNotification("🦘 High Jump: ON")
+        else
+            setJumpPower(originalJumpPower)
+            createNotification("🦘 High Jump: OFF")
         end
     end)
 
@@ -420,11 +527,28 @@ local success, err = pcall(function()
         end
     end)
 
+    -- Character respawn handler
+    player.CharacterAdded:Connect(function(character)
+        character:WaitForChild("Humanoid")
+        wait(1)
+        
+        if speedEnabled then
+            setWalkSpeed(100)
+        end
+        if jumpEnabled then
+            setJumpPower(150)
+        end
+    end)
+
     -- Events
     closeButton.MouseButton1Click:Connect(function()
         _G.GrowGardenLoaded = false
         if autoCollectConnection then autoCollectConnection:Disconnect() end
         if autoBuyConnection then autoBuyConnection:Disconnect() end
+        
+        setWalkSpeed(originalWalkSpeed)
+        setJumpPower(originalJumpPower)
+        
         screenGui:Destroy()
     end)
 
@@ -433,8 +557,8 @@ local success, err = pcall(function()
     mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 
     TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 350, 0, 300),
-        Position = UDim2.new(0.5, -175, 0.5, -150)
+        Size = UDim2.new(0, 350, 0, 400),
+        Position = UDim2.new(0.5, -175, 0.5, -200)
     }):Play()
 
     -- Keybind
@@ -444,8 +568,9 @@ local success, err = pcall(function()
         end
     end)
 
-    print("✅ Grow a Garden Script Loaded!")
-    createNotification("🌱 Garden Script Ready!")
+    print("✅ Grow a Garden Script v1.2 Loaded!")
+    print("🌱 All " .. #allSeeds .. " seed types supported!")
+    createNotification("🌱 Garden Script Ready!\n🌱 All " .. #allSeeds .. " seeds supported!")
 end)
 
 if not success then
