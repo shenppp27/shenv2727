@@ -1,5 +1,5 @@
 -- 🌱 Grow a Garden Script Hub
--- Version: 1.2 (Added All Seeds)
+-- Version: 1.3 (Added Minimize/Toggle)
 -- Compatible with Delta Executor
 -- Created by ShenEnv
 -- GitHub: https://github.com/shenppp27/shenv2727
@@ -37,7 +37,9 @@ local success, err = pcall(function()
         "Carrot", "Strawberry", "Blueberry", "Tomato", "Corn", 
         "Daffodil", "Watermelon", "Pumpkin", "Apple", "Bamboo", 
         "Coconut", "Cactus", "Mango", "Pepper", "Grape", 
-        "Mushroom", "Cacao", "Beanstalk"
+        "Mushroom", "Cacao", "Beanstalk", "Orange", "Tulip", 
+        "Ember Lily", "Sugar Apple", "Burning Bud", "Giant Pinecone", 
+        "Elder Strawberry"
     }
 
     -- Farming Variables
@@ -51,6 +53,9 @@ local success, err = pcall(function()
     local jumpEnabled = false
     local originalWalkSpeed = 16
     local originalJumpPower = 50
+
+    -- GUI Variables
+    local isMinimized = false
 
     -- Game Events
     local playerScripts = player:WaitForChild("PlayerScripts")
@@ -219,7 +224,7 @@ local success, err = pcall(function()
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.ResetOnSpawn = false
 
-    -- Main Frame (made larger for more features)
+    -- Main Frame (DRAGGABLE)
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
     mainFrame.Parent = screenGui
@@ -228,13 +233,13 @@ local success, err = pcall(function()
     mainFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
     mainFrame.Size = UDim2.new(0, 350, 0, 400)
     mainFrame.Active = true
-    mainFrame.Draggable = true
+    mainFrame.Draggable = true -- DRAGGABLE GUI
 
     local mainCorner = Instance.new("UICorner")
     mainCorner.CornerRadius = UDim.new(0, 10)
     mainCorner.Parent = mainFrame
 
-    -- Top Bar
+    -- Top Bar (Drag Handle)
     local topBar = Instance.new("Frame")
     topBar.Name = "TopBar"
     topBar.Parent = mainFrame
@@ -252,14 +257,14 @@ local success, err = pcall(function()
     titleLabel.Parent = topBar
     titleLabel.BackgroundTransparency = 1
     titleLabel.Position = UDim2.new(0, 10, 0, 0)
-    titleLabel.Size = UDim2.new(0, 250, 1, 0)
+    titleLabel.Size = UDim2.new(0, 220, 1, 0)
     titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.Text = "🌱 Grow a Garden Hub v1.2"
+    titleLabel.Text = "🌱 Grow a Garden Hub v1.3"
     titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     titleLabel.TextSize = 14
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Close Button
+    -- Close Button (X)
     local closeButton = Instance.new("TextButton")
     closeButton.Name = "CloseButton"
     closeButton.Parent = topBar
@@ -275,6 +280,23 @@ local success, err = pcall(function()
     local closeCorner = Instance.new("UICorner")
     closeCorner.CornerRadius = UDim.new(0, 5)
     closeCorner.Parent = closeButton
+
+    -- Minimize Button (-)
+    local minimizeButton = Instance.new("TextButton")
+    minimizeButton.Name = "MinimizeButton"
+    minimizeButton.Parent = topBar
+    minimizeButton.BackgroundColor3 = Color3.fromRGB(255, 193, 7)
+    minimizeButton.BorderSizePixel = 0
+    minimizeButton.Position = UDim2.new(1, -60, 0, 5)
+    minimizeButton.Size = UDim2.new(0, 25, 0, 25)
+    minimizeButton.Font = Enum.Font.GothamBold
+    minimizeButton.Text = "−"
+    minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    minimizeButton.TextSize = 12
+
+    local minimizeCorner = Instance.new("UICorner")
+    minimizeCorner.CornerRadius = UDim.new(0, 5)
+    minimizeCorner.Parent = minimizeButton
 
     -- Content Frame with scroll
     local contentFrame = Instance.new("ScrollingFrame")
@@ -540,8 +562,37 @@ local success, err = pcall(function()
         end
     end)
 
-    -- Events
+    -- Toggle/Minimize Function
+    local function toggleGUI()
+        isMinimized = not isMinimized
+        
+        if isMinimized then
+            -- Minimize - hide content, show only title bar
+            TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Size = UDim2.new(0, 350, 0, 35),
+                Position = UDim2.new(0.5, -175, 0.5, -17.5)
+            }):Play()
+            contentFrame.Visible = false
+            minimizeButton.Text = "□"
+            createNotification("📦 GUI Minimized")
+        else
+            -- Maximize - show full GUI
+            TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
+                Size = UDim2.new(0, 350, 0, 400),
+                Position = UDim2.new(0.5, -175, 0.5, -200)
+            }):Play()
+            wait(0.1)
+            contentFrame.Visible = true
+            minimizeButton.Text = "−"
+            createNotification("📦 GUI Expanded")
+        end
+    end
+
+    -- Button Events
     closeButton.MouseButton1Click:Connect(function()
+        createNotification("👋 GUI Closed")
+        wait(0.5)
+        
         _G.GrowGardenLoaded = false
         if autoCollectConnection then autoCollectConnection:Disconnect() end
         if autoBuyConnection then autoBuyConnection:Disconnect() end
@@ -552,6 +603,8 @@ local success, err = pcall(function()
         screenGui:Destroy()
     end)
 
+    minimizeButton.MouseButton1Click:Connect(toggleGUI)
+
     -- Entrance Animation
     mainFrame.Size = UDim2.new(0, 0, 0, 0)
     mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -561,16 +614,31 @@ local success, err = pcall(function()
         Position = UDim2.new(0.5, -175, 0.5, -200)
     }):Play()
 
-    -- Keybind
+    -- Keybind to toggle GUI (Right Control)
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if not gameProcessed and input.KeyCode == Enum.KeyCode.RightControl then
             screenGui.Enabled = not screenGui.Enabled
+            createNotification(screenGui.Enabled and "👁️ GUI Shown" or "👁️ GUI Hidden")
         end
     end)
 
-    print("✅ Grow a Garden Script v1.2 Loaded!")
+    -- Double-click title bar to minimize/maximize
+    local lastClickTime = 0
+    titleLabel.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local currentTime = tick()
+            if currentTime - lastClickTime < 0.3 then -- Double click detected
+                toggleGUI()
+            end
+            lastClickTime = currentTime
+        end
+    end)
+
+    print("✅ Grow a Garden Script v1.3 Loaded!")
     print("🌱 All " .. #allSeeds .. " seed types supported!")
-    createNotification("🌱 Garden Script Ready!\n🌱 All " .. #allSeeds .. " seeds supported!")
+    print("🖱️ GUI is draggable and minimizable!")
+    print("⌨️ Right Ctrl = Hide/Show | Double-click title = Minimize")
+    createNotification("🌱 Garden Script Ready!\n🖱️ Drag to move, − to minimize\n⌨️ Right Ctrl to hide/show")
 end)
 
 if not success then
