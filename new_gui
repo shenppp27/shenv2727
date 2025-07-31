@@ -163,7 +163,7 @@ local success, err = pcall(function()
             local offsetX = (i % 5) * 3 -- 5 seeds per row, 3 units apart
             local offsetZ = math.floor((i - 1) / 5) * 3 -- Move to next row every 5 seeds
             
-            local position = Vector3.new(baseX + offsetX, baseY, baseZ + offsetZ)
+            local position = vector.create(baseX + offsetX, baseY, baseZ + offsetZ)
             
             local success = plantSeed(seedName, position)
             if success then
@@ -390,7 +390,7 @@ local success, err = pcall(function()
     contentFrame.BackgroundTransparency = 1
     contentFrame.Position = UDim2.new(0, 15, 0, 45)
     contentFrame.Size = UDim2.new(1, -30, 1, -60)
-    contentFrame.CanvasSize = UDim2.new(0, 0, 0, 620) -- Scroll for more content
+    contentFrame.CanvasSize = UDim2.new(0, 0, 0, 700) -- Scroll for more content
     contentFrame.ScrollBarThickness = 6
     contentFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
 
@@ -789,7 +789,8 @@ local success, err = pcall(function()
     print("🌾 Plant All Seeds feature added!")
     print("🖱️ GUI is draggable and minimizable!")
     print("⌨️ Right Ctrl = Hide/Show | Double-click title = Minimize")
-    createNotification("🌱 Garden Script Ready!\n🌾 Plant All Seeds added!\n🖱️ Drag to move, − to minimize")
+    print("📜 Scroll down in GUI to see Plant All Seeds buttons!")
+    createNotification("🌱 Garden Script Ready!\n🌾 SCROLL DOWN to see Plant buttons!\n🖱️ Drag to move, − to minimize")
 end)
 
 if not success then
