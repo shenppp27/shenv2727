@@ -1,5 +1,5 @@
 -- 🌱 Grow a Garden Script Hub
--- Version: 1.4 (Fixed Dragging + New Seeds)
+-- Version: 1.5 (Added Plant All Seeds Feature)
 -- Compatible with Delta Executor
 -- Created by ShenEnv
 -- GitHub: https://github.com/shenppp27/shenv2727
@@ -45,8 +45,10 @@ local success, err = pcall(function()
     -- Farming Variables
     local autoCollectFruits = false
     local autoBuyAllSeeds = false
+    local autoPlantAllSeeds = false
     local autoCollectConnection = nil
     local autoBuyConnection = nil
+    local autoPlantConnection = nil
 
     -- Movement Variables
     local speedEnabled = false
@@ -65,6 +67,7 @@ local success, err = pcall(function()
     local buySeedStock = gameEvents:WaitForChild("BuySeedStock")
     local saveSlotService = gameEvents:WaitForChild("SaveSlotService")
     local rememberUnlockage = saveSlotService:WaitForChild("RememberUnlockage")
+    local plantRE = gameEvents:WaitForChild("Plant_RE")
 
     -- Function to collect fruit
     local function collectFruit(position)
@@ -105,6 +108,86 @@ local success, err = pcall(function()
         end
         
         return purchased, failed
+    end
+
+    -- Function to plant a single seed
+    local function plantSeed(seedName, position)
+        local success, err = pcall(function()
+            -- Step 1: Remember unlockage
+            rememberUnlockage:FireServer()
+            wait(0.1)
+            
+            -- Step 2: Plant the seed
+            local args = {position, seedName}
+            plantRE:FireServer(unpack(args))
+            wait(0.1)
+            
+            -- Step 3: Multiple activation calls (planting sequence)
+            local plantCFrame = CFrame.new(position.X, position.Y, position.Z, -0.9653047323226929, -0.22957459092140198, 0.12442785501480103, -0, 0.4765050709247589, 0.8791717886924744, -0.26112598180770874, 0.8486686944961548, -0.4599725902080536)
+            
+            -- First activation (true)
+            activation:FireServer(true, plantCFrame)
+            wait(0.1)
+            
+            -- Second activation (true) - try both Character and PlayerScripts paths
+            pcall(function()
+                player.Character:WaitForChild("InputGateway"):WaitForChild("Activation"):FireServer(true, plantCFrame)
+            end)
+            wait(0.1)
+            
+            -- Third activation (false)
+            activation:FireServer(false, plantCFrame)
+            wait(0.1)
+            
+            -- Fourth activation (false) - try Character path
+            pcall(function()
+                player.Character:WaitForChild("InputGateway"):WaitForChild("Activation"):FireServer(false, plantCFrame)
+            end)
+            wait(0.1)
+        end)
+        return success
+    end
+
+    -- Function to plant all seeds
+    local function plantAllSeeds()
+        local planted = 0
+        local failed = 0
+        
+        -- Base position (you can adjust this)
+        local baseX = -109
+        local baseY = 0.135
+        local baseZ = 60
+        
+        for i, seedName in pairs(allSeeds) do
+            -- Create different positions for each seed (spread them out)
+            local offsetX = (i % 5) * 3 -- 5 seeds per row, 3 units apart
+            local offsetZ = math.floor((i - 1) / 5) * 3 -- Move to next row every 5 seeds
+            
+            local position = Vector3.new(baseX + offsetX, baseY, baseZ + offsetZ)
+            
+            local success = plantSeed(seedName, position)
+            if success then
+                planted = planted + 1
+                print("🌱 Planted: " .. seedName .. " at (" .. math.floor(position.X) .. ", " .. math.floor(position.Z) .. ")")
+            else
+                failed = failed + 1
+                warn("❌ Failed to plant: " .. seedName)
+            end
+            wait(0.2) -- Small delay between plantings
+        end
+        
+        return planted, failed
+    end
+
+    -- Auto plant all seeds loop
+    local function autoPlantAllSeedsLoop()
+        if not autoPlantAllSeeds then return end
+        
+        local planted, failed = plantAllSeeds()
+        if planted > 0 then
+            print("🌱 Auto-planted " .. planted .. " seeds!")
+        end
+        wait(30) -- Wait 30 seconds between auto-planting cycles
     end
 
     -- Movement Functions
@@ -260,7 +343,7 @@ local success, err = pcall(function()
     titleLabel.Position = UDim2.new(0, 10, 0, 0)
     titleLabel.Size = UDim2.new(0, 220, 1, 0)
     titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.Text = "🌱 Grow a Garden Hub v1.4"
+    titleLabel.Text = "🌱 Grow a Garden Hub v1.5"
     titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     titleLabel.TextSize = 14
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -307,7 +390,7 @@ local success, err = pcall(function()
     contentFrame.BackgroundTransparency = 1
     contentFrame.Position = UDim2.new(0, 15, 0, 45)
     contentFrame.Size = UDim2.new(1, -30, 1, -60)
-    contentFrame.CanvasSize = UDim2.new(0, 0, 0, 550) -- Scroll for more content
+    contentFrame.CanvasSize = UDim2.new(0, 0, 0, 620) -- Scroll for more content
     contentFrame.ScrollBarThickness = 6
     contentFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
 
@@ -493,6 +576,36 @@ local success, err = pcall(function()
         end
     end)
 
+    -- Plant All Seeds Features
+    createButton("🌾 PLANT ALL SEEDS", Color3.fromRGB(139, 69, 19), function()
+        createNotification("🌾 Planting all seeds...")
+        spawn(function()
+            local planted, failed = plantAllSeeds()
+            createNotification("🌾 Planted " .. planted .. " seeds!\n❌ Failed: " .. failed)
+        end)
+    end)
+
+    createToggle("🌾 Auto Plant All Seeds", function(state)
+        autoPlantAllSeeds = state
+        
+        if state then
+            createNotification("🌾 Auto Plant All: ON")
+            if autoPlantConnection then
+                autoPlantConnection:Disconnect()
+            end
+            autoPlantConnection = RunService.Heartbeat:Connect(function()
+                spawn(autoPlantAllSeedsLoop)
+                wait(30)
+            end)
+        else
+            createNotification("🌾 Auto Plant All: OFF")
+            if autoPlantConnection then
+                autoPlantConnection:Disconnect()
+                autoPlantConnection = nil
+            end
+        end
+    end)
+
     -- Individual seed buttons (compact)
     createButton("🥕 Carrot", Color3.fromRGB(255, 140, 0), function()
         local success = buySeed("Carrot")
@@ -598,6 +711,7 @@ local success, err = pcall(function()
         _G.GrowGardenLoaded = false
         if autoCollectConnection then autoCollectConnection:Disconnect() end
         if autoBuyConnection then autoBuyConnection:Disconnect() end
+        if autoPlantConnection then autoPlantConnection:Disconnect() end
         
         setWalkSpeed(originalWalkSpeed)
         setJumpPower(originalJumpPower)
@@ -670,11 +784,12 @@ local success, err = pcall(function()
         end
     end)
 
-    print("✅ Grow a Garden Script v1.4 Loaded!")
+    print("✅ Grow a Garden Script v1.5 Loaded!")
     print("🌱 All " .. #allSeeds .. " seed types supported!")
+    print("🌾 Plant All Seeds feature added!")
     print("🖱️ GUI is draggable and minimizable!")
     print("⌨️ Right Ctrl = Hide/Show | Double-click title = Minimize")
-    createNotification("🌱 Garden Script Ready!\n🖱️ Drag to move, − to minimize\n⌨️ Right Ctrl to hide/show")
+    createNotification("🌱 Garden Script Ready!\n🌾 Plant All Seeds added!\n🖱️ Drag to move, − to minimize")
 end)
 
 if not success then
