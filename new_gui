@@ -1,1 +1,542 @@
+-- 🐾 Pet Script Hub - Main Script
+-- Version: 2.0
+-- Compatible with Delta Executor
+-- Created by ShenEnv
+-- GitHub: https://github.com/shenppp27/shenv2727
 
+-- Security check
+if not game:GetService("Players").LocalPlayer then
+    warn("❌ Script failed to load: Player not found")
+    return
+end
+
+-- Anti-duplicate check
+if _G.PetScriptHubLoaded then
+    warn("⚠️ Pet Script Hub already loaded!")
+    return
+end
+_G.PetScriptHubLoaded = true
+
+print("🔄 Loading Pet Script Hub...")
+
+local success, err = pcall(function()
+    -- Services
+    local Players = game:GetService("Players")
+    local TweenService = game:GetService("TweenService")
+    local UserInputService = game:GetService("UserInputService")
+    local CoreGui = game:GetService("CoreGui")
+    local RunService = game:GetService("RunService")
+    local HttpService = game:GetService("HttpService")
+    local TeleportService = game:GetService("TeleportService")
+
+    local player = Players.LocalPlayer
+    local mouse = player:GetMouse()
+
+    -- Clean up any existing GUI
+    if CoreGui:FindFirstChild("PetScriptGUI") then
+        CoreGui:FindFirstChild("PetScriptGUI"):Destroy()
+        wait(0.1)
+    end
+
+    -- Create main ScreenGui
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "PetScriptGUI"
+    screenGui.Parent = CoreGui
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.ResetOnSpawn = false
+
+    -- Main Frame
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Parent = screenGui
+    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
+    mainFrame.Size = UDim2.new(0, 600, 0, 400)
+    mainFrame.Active = true
+    mainFrame.Draggable = true
+
+    -- Add corner radius and shadow
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 12)
+    mainCorner.Parent = mainFrame
+
+    -- Top Bar
+    local topBar = Instance.new("Frame")
+    topBar.Name = "TopBar"
+    topBar.Parent = mainFrame
+    topBar.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    topBar.BorderSizePixel = 0
+    topBar.Size = UDim2.new(1, 0, 0, 40)
+
+    local topBarCorner = Instance.new("UICorner")
+    topBarCorner.CornerRadius = UDim.new(0, 12)
+    topBarCorner.Parent = topBar
+
+    -- Title with version
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Name = "Title"
+    titleLabel.Parent = topBar
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Position = UDim2.new(0, 15, 0, 0)
+    titleLabel.Size = UDim2.new(0, 200, 1, 0)
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.Text = "🐾 Pet Script Hub v2.0"
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.TextSize = 16
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- Status indicator
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Name = "Status"
+    statusLabel.Parent = topBar
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Position = UDim2.new(0, 220, 0, 0)
+    statusLabel.Size = UDim2.new(0, 150, 1, 0)
+    statusLabel.Font = Enum.Font.Gotham
+    statusLabel.Text = "🟢 Online"
+    statusLabel.TextColor3 = Color3.fromRGB(96, 255, 96)
+    statusLabel.TextSize = 12
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- Close Button
+    local closeButton = Instance.new("TextButton")
+    closeButton.Name = "CloseButton"
+    closeButton.Parent = topBar
+    closeButton.BackgroundColor3 = Color3.fromRGB(255, 96, 96)
+    closeButton.BorderSizePixel = 0
+    closeButton.Position = UDim2.new(1, -35, 0, 5)
+    closeButton.Size = UDim2.new(0, 30, 0, 30)
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.Text = "✕"
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.TextSize = 14
+
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 6)
+    closeCorner.Parent = closeButton
+
+    -- Minimize Button
+    local minimizeButton = Instance.new("TextButton")
+    minimizeButton.Name = "MinimizeButton"
+    minimizeButton.Parent = topBar
+    minimizeButton.BackgroundColor3 = Color3.fromRGB(255, 193, 7)
+    minimizeButton.BorderSizePixel = 0
+    minimizeButton.Position = UDim2.new(1, -70, 0, 5)
+    minimizeButton.Size = UDim2.new(0, 30, 0, 30)
+    minimizeButton.Font = Enum.Font.GothamBold
+    minimizeButton.Text = "−"
+    minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    minimizeButton.TextSize = 14
+
+    local minimizeCorner = Instance.new("UICorner")
+    minimizeCorner.CornerRadius = UDim.new(0, 6)
+    minimizeCorner.Parent = minimizeButton
+
+    -- Tab System
+    local tabContainer = Instance.new("Frame")
+    tabContainer.Name = "TabContainer"
+    tabContainer.Parent = mainFrame
+    tabContainer.BackgroundTransparency = 1
+    tabContainer.Position = UDim2.new(0, 0, 0, 40)
+    tabContainer.Size = UDim2.new(1, 0, 0, 40)
+
+    local tabLayout = Instance.new("UIListLayout")
+    tabLayout.FillDirection = Enum.FillDirection.Horizontal
+    tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    tabLayout.Padding = UDim.new(0, 2)
+    tabLayout.Parent = tabContainer
+
+    -- Content Container
+    local contentContainer = Instance.new("Frame")
+    contentContainer.Name = "ContentContainer"
+    contentContainer.Parent = mainFrame
+    contentContainer.BackgroundTransparency = 1
+    contentContainer.Position = UDim2.new(0, 10, 0, 85)
+    contentContainer.Size = UDim2.new(1, -20, 1, -95)
+
+    -- Variables
+    local tabs = {}
+    local currentTab = nil
+    local isMinimized = false
+
+    -- Create Tab Function
+    local function createTab(name, icon)
+        local tabButton = Instance.new("TextButton")
+        tabButton.Name = name .. "Tab"
+        tabButton.Parent = tabContainer
+        tabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+        tabButton.BorderSizePixel = 0
+        tabButton.Size = UDim2.new(0, 120, 1, 0)
+        tabButton.Font = Enum.Font.Gotham
+        tabButton.Text = icon .. " " .. name
+        tabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+        tabButton.TextSize = 12
+        
+        local tabCorner = Instance.new("UICorner")
+        tabCorner.CornerRadius = UDim.new(0, 8)
+        tabCorner.Parent = tabButton
+        
+        local tabContent = Instance.new("ScrollingFrame")
+        tabContent.Name = name .. "Content"
+        tabContent.Parent = contentContainer
+        tabContent.BackgroundTransparency = 1
+        tabContent.BorderSizePixel = 0
+        tabContent.Size = UDim2.new(1, 0, 1, 0)
+        tabContent.CanvasSize = UDim2.new(0, 0, 2, 0)
+        tabContent.ScrollBarThickness = 6
+        tabContent.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+        tabContent.Visible = false
+        
+        local contentLayout = Instance.new("UIListLayout")
+        contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        contentLayout.Padding = UDim.new(0, 10)
+        contentLayout.Parent = tabContent
+        
+        tabs[name] = {
+            button = tabButton,
+            content = tabContent
+        }
+        
+        tabButton.MouseButton1Click:Connect(function()
+            switchTab(name)
+        end)
+        
+        return tabContent
+    end
+
+    -- Switch Tab Function
+    function switchTab(tabName)
+        for name, tab in pairs(tabs) do
+            if name == tabName then
+                tab.button.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
+                tab.button.TextColor3 = Color3.fromRGB(255, 255, 255)
+                tab.content.Visible = true
+                currentTab = name
+            else
+                tab.button.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+                tab.button.TextColor3 = Color3.fromRGB(200, 200, 200)
+                tab.content.Visible = false
+            end
+        end
+    end
+
+    -- Create Button Function
+    local function createButton(parent, text, color, callback)
+        local button = Instance.new("TextButton")
+        button.Parent = parent
+        button.BackgroundColor3 = color or Color3.fromRGB(70, 130, 255)
+        button.BorderSizePixel = 0
+        button.Size = UDim2.new(1, 0, 0, 35)
+        button.Font = Enum.Font.Gotham
+        button.Text = text
+        button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        button.TextSize = 12
+        
+        local buttonCorner = Instance.new("UICorner")
+        buttonCorner.CornerRadius = UDim.new(0, 6)
+        buttonCorner.Parent = button
+        
+        button.MouseButton1Click:Connect(function()
+            pcall(callback)
+        end)
+        
+        -- Hover Effect
+        button.MouseEnter:Connect(function()
+            TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(90, 150, 255)}):Play()
+        end)
+        
+        button.MouseLeave:Connect(function()
+            TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = color or Color3.fromRGB(70, 130, 255)}):Play()
+        end)
+        
+        return button
+    end
+
+    -- Create Toggle Function
+    local function createToggle(parent, text, callback)
+        local toggleFrame = Instance.new("Frame")
+        toggleFrame.Parent = parent
+        toggleFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+        toggleFrame.BorderSizePixel = 0
+        toggleFrame.Size = UDim2.new(1, 0, 0, 40)
+        
+        local toggleCorner = Instance.new("UICorner")
+        toggleCorner.CornerRadius = UDim.new(0, 6)
+        toggleCorner.Parent = toggleFrame
+        
+        local toggleLabel = Instance.new("TextLabel")
+        toggleLabel.Parent = toggleFrame
+        toggleLabel.BackgroundTransparency = 1
+        toggleLabel.Position = UDim2.new(0, 10, 0, 0)
+        toggleLabel.Size = UDim2.new(1, -60, 1, 0)
+        toggleLabel.Font = Enum.Font.Gotham
+        toggleLabel.Text = text
+        toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        toggleLabel.TextSize = 12
+        toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        
+        local toggleButton = Instance.new("TextButton")
+        toggleButton.Parent = toggleFrame
+        toggleButton.BackgroundColor3 = Color3.fromRGB(255, 96, 96)
+        toggleButton.BorderSizePixel = 0
+        toggleButton.Position = UDim2.new(1, -45, 0, 10)
+        toggleButton.Size = UDim2.new(0, 35, 0, 20)
+        toggleButton.Text = ""
+        
+        local toggleButtonCorner = Instance.new("UICorner")
+        toggleButtonCorner.CornerRadius = UDim.new(0, 10)
+        toggleButtonCorner.Parent = toggleButton
+        
+        local toggleIndicator = Instance.new("Frame")
+        toggleIndicator.Parent = toggleButton
+        toggleIndicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        toggleIndicator.BorderSizePixel = 0
+        toggleIndicator.Position = UDim2.new(0, 2, 0, 2)
+        toggleIndicator.Size = UDim2.new(0, 16, 0, 16)
+        
+        local indicatorCorner = Instance.new("UICorner")
+        indicatorCorner.CornerRadius = UDim.new(0, 8)
+        indicatorCorner.Parent = toggleIndicator
+        
+        local isToggled = false
+        
+        toggleButton.MouseButton1Click:Connect(function()
+            isToggled = not isToggled
+            
+            if isToggled then
+                TweenService:Create(toggleButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(96, 255, 96)}):Play()
+                TweenService:Create(toggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(0, 17, 0, 2)}):Play()
+            else
+                TweenService:Create(toggleButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 96, 96)}):Play()
+                TweenService:Create(toggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0, 2)}):Play()
+            end
+            
+            pcall(callback, isToggled)
+        end)
+        
+        return toggleFrame
+    end
+
+    -- Create notification function
+    local function createNotification(text, duration)
+        duration = duration or 3
+        
+        local notif = Instance.new("Frame")
+        notif.Parent = screenGui
+        notif.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+        notif.BorderSizePixel = 0
+        notif.Position = UDim2.new(1, 10, 0, 50)
+        notif.Size = UDim2.new(0, 250, 0, 60)
+        
+        local notifCorner = Instance.new("UICorner")
+        notifCorner.CornerRadius = UDim.new(0, 8)
+        notifCorner.Parent = notif
+        
+        local notifText = Instance.new("TextLabel")
+        notifText.Parent = notif
+        notifText.BackgroundTransparency = 1
+        notifText.Position = UDim2.new(0, 10, 0, 10)
+        notifText.Size = UDim2.new(1, -20, 1, -20)
+        notifText.Font = Enum.Font.Gotham
+        notifText.Text = text
+        notifText.TextColor3 = Color3.fromRGB(255, 255, 255)
+        notifText.TextSize = 12
+        notifText.TextWrapped = true
+        
+        -- Slide in animation
+        TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(1, -260, 0, 50)}):Play()
+        
+        -- Auto remove
+        wait(duration)
+        TweenService:Create(notif, TweenInfo.new(0.5), {Position = UDim2.new(1, 10, 0, 50)}):Play()
+        wait(0.5)
+        notif:Destroy()
+    end
+
+    -- Create Tabs
+    local autoFarmTab = createTab("Auto Farm", "🚜")
+    local petTab = createTab("Pet", "🐾")
+    local playerTab = createTab("Player", "👤")
+    local teleportTab = createTab("Teleport", "🌐")
+    local miscTab = createTab("Misc", "⚙️")
+
+    -- Auto Farm Tab Content
+    createButton(autoFarmTab, "🎯 Auto Click", Color3.fromRGB(255, 165, 0), function()
+        createNotification("🎯 Auto Click Activated!", 2)
+        -- Add your auto click script here
+    end)
+
+    createToggle(autoFarmTab, "Auto Collect Coins", function(state)
+        if state then
+            createNotification("💰 Auto Collect Coins: ON", 2)
+        else
+            createNotification("💰 Auto Collect Coins: OFF", 2)
+        end
+        -- Add your auto collect script here
+    end)
+
+    createToggle(autoFarmTab, "Auto Rebirth", function(state)
+        if state then
+            createNotification("🔄 Auto Rebirth: ON", 2)
+        else
+            createNotification("🔄 Auto Rebirth: OFF", 2)
+        end
+        -- Add your auto rebirth script here
+    end)
+
+    createButton(autoFarmTab, "🎁 Auto Open Eggs", Color3.fromRGB(255, 20, 147), function()
+        createNotification("🎁 Auto Open Eggs Activated!", 2)
+        -- Add your auto egg opening script here
+    end)
+
+    -- Pet Tab Content
+    createButton(petTab, "🌟 Auto Equip Best Pets", Color3.fromRGB(255, 215, 0), function()
+        createNotification("🌟 Auto Equip Best Pets Activated!", 2)
+        -- Add your auto equip script here
+    end)
+
+    createToggle(petTab, "Auto Feed Pets", function(state)
+        if state then
+            createNotification("🍖 Auto Feed Pets: ON", 2)
+        else
+            createNotification("🍖 Auto Feed Pets: OFF", 2)
+        end
+        -- Add your auto feed script here
+    end)
+
+    createButton(petTab, "💎 Delete Weak Pets", Color3.fromRGB(220, 20, 60), function()
+        createNotification("💎 Delete Weak Pets Activated!", 2)
+        -- Add your delete pets script here
+    end)
+
+    -- Player Tab Content
+    createButton(playerTab, "⚡ Super Speed", Color3.fromRGB(0, 255, 127), function()
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.WalkSpeed = 100
+            createNotification("⚡ Super Speed Activated!", 2)
+        end
+    end)
+
+    createButton(playerTab, "🦘 Super Jump", Color3.fromRGB(255, 69, 0), function()
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.JumpPower = 200
+            createNotification("🦘 Super Jump Activated!", 2)
+        end
+    end)
+
+    createToggle(playerTab, "Infinite Jump", function(state)
+        if state then
+            createNotification("🚀 Infinite Jump: ON", 2)
+            -- Enable infinite jump
+            UserInputService.JumpRequest:Connect(function()
+                if player.Character and player.Character:FindFirstChild("Humanoid") then
+                    player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+            end)
+        else
+            createNotification("🚀 Infinite Jump: OFF", 2)
+        end
+    end)
+
+    -- Teleport Tab Content
+    createButton(teleportTab, "🏪 Teleport to Shop", Color3.fromRGB(75, 0, 130), function()
+        createNotification("🏪 Teleporting to Shop...", 2)
+        -- Add teleport script here
+    end)
+
+    createButton(teleportTab, "🥚 Teleport to Egg Area", Color3.fromRGB(255, 140, 0), function()
+        createNotification("🥚 Teleporting to Egg Area...", 2)
+        -- Add teleport script here
+    end)
+
+    createButton(teleportTab, "👑 Teleport to VIP Area", Color3.fromRGB(255, 215, 0), function()
+        createNotification("👑 Teleporting to VIP Area...", 2)
+        -- Add teleport script here
+    end)
+
+    -- Misc Tab Content
+    createToggle(miscTab, "Anti-AFK", function(state)
+        if state then
+            createNotification("😴 Anti-AFK: ON", 2)
+            -- Anti-AFK script
+            _G.antiAfkConnection = RunService.Heartbeat:Connect(function()
+                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    player.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame
+                end
+            end)
+        else
+            createNotification("😴 Anti-AFK: OFF", 2)
+            if _G.antiAfkConnection then
+                _G.antiAfkConnection:Disconnect()
+            end
+        end
+    end)
+
+    createButton(miscTab, "🔄 Rejoin Server", Color3.fromRGB(138, 43, 226), function()
+        createNotification("🔄 Rejoining server...", 2)
+        wait(1)
+        TeleportService:Teleport(game.PlaceId, player)
+    end)
+
+    createButton(miscTab, "📋 Copy Server ID", Color3.fromRGB(32, 178, 170), function()
+        local jobId = game.JobId
+        if setclipboard then
+            setclipboard(jobId)
+            createNotification("📋 Server ID copied to clipboard!", 2)
+        else
+            createNotification("📋 Clipboard not supported by executor!", 2)
+        end
+    end)
+
+    -- Initialize
+    switchTab("Auto Farm")
+
+    -- Button Events
+    closeButton.MouseButton1Click:Connect(function()
+        _G.PetScriptHubLoaded = false
+        screenGui:Destroy()
+    end)
+
+    minimizeButton.MouseButton1Click:Connect(function()
+        isMinimized = not isMinimized
+        
+        if isMinimized then
+            TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 600, 0, 40)}):Play()
+            minimizeButton.Text = "□"
+        else
+            TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 600, 0, 400)}):Play()
+            minimizeButton.Text = "−"
+        end
+    end)
+
+    -- Entrance Animation
+    mainFrame.Size = UDim2.new(0, 0, 0, 0)
+    mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+
+    local entranceInfo = TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    local entranceTween = TweenService:Create(mainFrame, entranceInfo, {
+        Size = UDim2.new(0, 600, 0, 400),
+        Position = UDim2.new(0.5, -300, 0.5, -200)
+    })
+
+    entranceTween:Play()
+
+    -- Keybind to toggle GUI (Right Control)
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if not gameProcessed and input.KeyCode == Enum.KeyCode.RightControl then
+            screenGui.Enabled = not screenGui.Enabled
+        end
+    end)
+
+    print("✅ Pet Script Hub v2.0 Loaded Successfully!")
+    print("💡 Created by ShenEnv")
+    print("🔗 GitHub: https://github.com/shenppp27/shenv2727")
+    print("⌨️ Press Right Ctrl to toggle GUI")
+    
+    createNotification("🐾 Pet Script Hub v2.0 Loaded!", 3)
+end)
+
+if not success then
+    warn("❌ Pet Script Hub failed to load: " .. tostring(err))
+end 
